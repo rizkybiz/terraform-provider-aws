@@ -285,7 +285,8 @@ rules:
         - internal/service/[be-g]*
         - internal/service/d[a-df-z]*
         - internal/service/devicefarm
-        - internal/service/i*
+        - internal/service/inspector
+        - internal/service/iot
         - internal/service/kafka
         - internal/service/kms
         - internal/service/lambda
@@ -706,8 +707,6 @@ rules:
         - internal/service/elb/proxy_protocol_policy.go
         - internal/service/events/bus_policy.go
         - internal/service/events/permission.go
-        - internal/service/iam/user.go
-        - internal/service/iam/user_ssh_key.go
     patterns:
       - pattern: |
           func $FUNC(...) {
