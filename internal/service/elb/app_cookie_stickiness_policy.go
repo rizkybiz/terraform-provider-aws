@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/elb"
+	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2/tfawserr"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-provider-aws/internal/conns"
 )
@@ -104,14 +105,17 @@ func resourceAppCookieStickinessPolicyRead(d *schema.ResourceData, meta interfac
 
 	getResp, err := conn.DescribeLoadBalancerPolicies(request)
 	if err != nil {
-		if ec2err, ok := err.(awserr.Error); ok {
-			if ec2err.Code() == "PolicyNotFound" || ec2err.Code() == "LoadBalancerNotFound" {
-				log.Printf("[WARN] Load Balancer / Load Balancer Policy (%s) not found, removing from state", d.Id())
-				d.SetId("")
-			}
+		if !d.IsNewResource() && tfawserr.ErrCodeEquals(err, elb.ErrCodePolicyNotFoundException) {
+			log.Printf("[WARN] ELB Classic LB (%s) App Cookie Policy (%s) not found, removing from state", lbName, policyName)
+			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error retrieving policy: %s", err)
+		if !d.IsNewResource() && tfawserr.ErrCodeEquals(err, elb.ErrCodeAccessPointNotFoundException) {
+			log.Printf("[WARN] ELB Classic LB (%s) not found, removing from state", lbName)
+			d.SetId("")
+			return nil
+		}
+		return fmt.Errorf("error retrieving ELB Classic (%s) App Cookie Policy (%s): %w", lbName, policyName, err)
 	}
 	if len(getResp.PolicyDescriptions) != 1 {
 		return fmt.Errorf("Unable to find policy %#v", getResp.PolicyDescriptions)
@@ -122,9 +126,8 @@ func resourceAppCookieStickinessPolicyRead(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return err
 	}
-	if !assigned {
-		// policy exists, but isn't assigned to a listener
-		log.Printf("[DEBUG] policy '%s' exists, but isn't assigned to a listener", policyName)
+	if !d.IsNewResource() && !assigned {
+		log.Printf("[WARN] ELB Classic LB (%s) App Cookie Policy (%s) exists, but isn't assigned to a listener", lbName, policyName)
 		d.SetId("")
 		return nil
 	}
