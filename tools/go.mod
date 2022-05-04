@@ -10,7 +10,7 @@ require (
 	github.com/katbyte/terrafmt v0.3.0
 	github.com/pavius/impi v0.0.3
 	github.com/rhysd/actionlint v1.6.12
-	github.com/terraform-linters/tflint v0.34.1
+	github.com/terraform-linters/tflint v0.35.0
 )
 
 require (
